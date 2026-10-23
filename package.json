@@ -1,0 +1,14 @@
+{
+  "name": "xat-p2p",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Xat senzill punt a punt amb simple-peer i WebRTC",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
+  }
+}

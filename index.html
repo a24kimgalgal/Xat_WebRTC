@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ca">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Xat P2P</title>
+  </head>
+  <body>
+    <h1>Xat P2P</h1>
+    <p id="status">Connectant amb el servidor...</p>
+
+    <section id="login">
+      <form id="login-form">
+        <label for="name">El teu nom:</label>
+        <input id="name" maxlength="24" required>
+        <button type="submit">Entra</button>
+      </form>
+      <p id="error"></p>
+    </section>
+
+    <main id="chat" hidden>
+      <h2>Usuaris connectats</h2>
+      <ul id="users"></ul>
+
+      <h2 id="chat-title">Xat</h2>
+      <div id="messages" aria-live="polite"></div>
+      <form id="message-form">
+        <label for="message">Missatge:</label>
+        <input id="message" autocomplete="off" disabled>
+        <button id="send" type="submit" disabled>Envia</button>
+      </form>
+    </main>
+
+    <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+    <script>
+      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+      const socket = new WebSocket(`${protocol}//${location.host}`);
+      const login = document.querySelector("#login");
+      const chat = document.querySelector("#chat");
+      const usersList = document.querySelector("#users");
+      const messages = document.querySelector("#messages");
+      const messageInput = document.querySelector("#message");
+      const sendButton = document.querySelector("#send");
+      const status = document.querySelector("#status");
+
+      let myId;
+      let selectedUser;
+      let peer;
+      let peerUserId;
+
+      function showMessage(text) {
+        const line = document.createElement("p");
+        line.textContent = text;
+        messages.append(line);
+      }
+
+      function closePeer() {
+        if (peer) {
+          peer.destroy();
+          peer = null;
+        }
+        peerUserId = null;
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+      }
+
+      function makePeer(user, initiator) {
+        closePeer();
+        selectedUser = user;
+        peerUserId = user.id;
+        document.querySelector("#chat-title").textContent = `Xat amb ${user.name}`;
+
+        peer = new SimplePeer({ initiator, trickle: false });
+        peer.on("signal", (signal) => {
+          socket.send(JSON.stringify({ type: "signal", target: user.id, signal }));
+        });
+        peer.on("connect", () => {
+          messageInput.disabled = false;
+          sendButton.disabled = false;
+          status.textContent = `Connectat directament amb ${user.name} (WebRTC).`;
+        });
+        peer.on("data", (data) => showMessage(`${user.name}: ${data.toString()}`));
+        peer.on("close", () => {
+          messageInput.disabled = true;
+          sendButton.disabled = true;
+          status.textContent = "Xat desconnectat.";
+        });
+        peer.on("error", (error) => {
+          status.textContent = `Error WebRTC: ${error.message}`;
+        });
+      }
+
+      socket.addEventListener("open", () => {
+        status.textContent = "Connectat al servidor.";
+      });
+
+      socket.addEventListener("close", () => {
+        status.textContent = "S'ha perdut la connexió amb el servidor.";
+        closePeer();
+      });
+
+      socket.addEventListener("message", (event) => {
+        const message = JSON.parse(event.data);
+
+        if (message.type === "joined") {
+          myId = message.id;
+          login.hidden = true;
+          chat.hidden = false;
+          status.textContent = `Has entrat com ${message.name}.`;
+        }
+
+        if (message.type === "error") {
+          document.querySelector("#error").textContent = message.message;
+        }
+
+        if (message.type === "users") {
+          usersList.replaceChildren();
+          for (const user of message.users) {
+            const item = document.createElement("li");
+            const button = document.createElement("button");
+            button.textContent = user.name;
+            button.addEventListener("click", () => {
+              if (peer) closePeer();
+              selectedUser = user;
+              document.querySelector("#chat-title").textContent = `Xat amb ${user.name}`;
+              status.textContent = `Connectant amb ${user.name}...`;
+              makePeer(user, true);
+            });
+            item.append(button);
+            usersList.append(item);
+          }
+        }
+
+        if (message.type === "signal") {
+          const user = { id: message.from, name: message.name };
+          if (peerUserId && peerUserId !== user.id) return;
+          if (!peer) makePeer(user, false);
+          peer.signal(message.signal);
+        }
+      });
+
+      document.querySelector("#login-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = document.querySelector("#name").value.trim();
+        if (name) socket.send(JSON.stringify({ type: "join", name }));
+      });
+
+      document.querySelector("#message-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = messageInput.value.trim();
+        if (!text || !peer || !peer.connected) return;
+        peer.send(text);
+        showMessage(`Jo: ${text}`);
+        messageInput.value = "";
+      });
+    </script>
+  </body>
+</html>
