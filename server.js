@@ -11,6 +11,10 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const users = new Map();
 
+app.get("/style.css", (request, response) => {
+    response.sendFile(path.join(__dirname, "style.css"));
+});
+
 app.get("/", (request, response) => {
     response.sendFile(path.join(__dirname, "index.html"));
 });
