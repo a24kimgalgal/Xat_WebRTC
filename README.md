@@ -7,6 +7,4 @@ Aplicació mínima de xat punt a punt amb simple-peer i WebRTC. El servidor gest
 1. Instal·la Node.js.
 2. Executa `npm install`.
 3. Executa `npm start`.
-4. Obre `http://localhost:3000` en dos navegadors o pestanyes diferents i entra amb noms diferents.
-
-La pàgina carrega simple-peer des d'un CDN. Per provar-la des d'un altre dispositiu, cal publicar el servidor en una adreça accessible. En entorns de producció es recomana HTTPS, que també habilita WebSocket segur (WSS).
+4. Obre `http://localhost:40603` en dos navegadors o pestanyes diferents i entra amb noms diferents.
