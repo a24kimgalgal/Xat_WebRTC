@@ -4,7 +4,7 @@ const { randomUUID } = require("crypto");
 const WebSocket = require("ws");
 const path = require("path");
 
-const port = 40603;
+const port = Number(process.env.PORT) || 40603;
 
 const app = express();
 const server = http.createServer(app);
@@ -13,6 +13,10 @@ const users = new Map();
 
 app.get("/style.css", (request, response) => {
     response.sendFile(path.join(__dirname, "style.css"));
+});
+
+app.get("/simplepeer.min.js", (request, response) => {
+    response.sendFile(path.join(__dirname, "node_modules", "simple-peer", "simplepeer.min.js"));
 });
 
 app.get("/", (request, response) => {
