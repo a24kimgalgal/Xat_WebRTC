@@ -4,7 +4,7 @@ const { randomUUID } = require("crypto");
 const WebSocket = require("ws");
 const path = require("path");
 
-const port = Number(process.env.PORT) || 40603;
+const port = 40603;
 
 const app = express();
 const server = http.createServer(app);
